@@ -136,49 +136,6 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
             return array('result' => 'failure');
         }
-
-        public function enqueue_scripts() {
-            if (!is_checkout()) return;
-            wp_enqueue_script('sweetalert2', 'https://cdn.jsdelivr.net/npm/sweetalert2@10', array(), null, true);
-            wp_add_inline_script('sweetalert2', $this->generate_inline_script(), 'after');
-        }
-
-        private function generate_inline_script() {
-            return "
-                jQuery(function($) {
-                    $('#place_order').on('click', function(e) {
-                        e.preventDefault();
-
-                        $.ajax({
-                            type: 'POST',
-                            url: wc_checkout_params.checkout_url,
-                            data: $('form.checkout').serialize(),
-                            dataType: 'json',
-                            success: function(response) {
-                                // Jika ada QR Code dalam response
-                                if (response.qr_code) {
-                                    Swal.fire({
-                                        title: 'Please Scan the QR Code',
-                                        html: '<img src=\"data:image/png;base64,' + response.qr_code + '\" />',
-                                        confirmButtonText: 'Continue',
-                                    }).then((result) => {
-                                        if (result.isConfirmed) {
-                                            window.location.href = response.redirect;
-                                        }
-                                    });
-                                } else {
-                                    alert(response.message);  // Menampilkan pesan error
-                                }
-                            }
-                        });
-                    });
-                });
-            ";
-        }
-
-        // Tambahkan hook untuk mendaftarkan script Anda
-        add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
-
     }
 
     /**
