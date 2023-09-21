@@ -117,13 +117,13 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             $request = [
                 'currency'         => 'BTC',
                 'currency_receive' => 'BTC',
-                'reference_id'     => 'refid_' . $order->get_id(),
-                'client'           => [
-                    'id'        => 'client_' . $order->get_billing_email(),
-                    'first_name'=> $order->get_billing_first_name(),
-                    'last_name' => $order->get_billing_last_name(),
-                    'email'     => $order->get_billing_email(),
-                    'address'   => $order->get_billing_address_1(),
+                'reference_id' => 'refid_0001',
+                'client' => [
+                    'id' => 'client_123456',
+                    'first_name' => 'Phil',
+                    'last_name' => 'MacNeely',
+                    'email' => 'hmacneely1@stumbleupon.com',
+                    'address' => '276 Homewood Crossing',
                 ],
             ];
 
