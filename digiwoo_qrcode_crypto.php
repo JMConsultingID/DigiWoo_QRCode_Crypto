@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 
 // Check if WooCommerce is active
 if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
-    add_action('plugins_loaded', 'digiwoo_qrcode_init', 0);
+    add_action('plugins_loaded', 'digiwoo_init_payment_gateway', 0);
 
     function digiwoo_init_payment_gateway() {
         if (!class_exists('WC_Payment_Gateway')) {
