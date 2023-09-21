@@ -103,14 +103,16 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
         }
 
         private function get_payment_data($order) {
+            $requestUrl = 'https://pay.letknow.com/api/2/get_deposit_address';
             $nonce = str_replace('.', '', microtime(true));
-
-            $signature = hash_hmac('sha256', "{$nonce}|{$this->shop_id}|{$this->shop_key}", $this->shop_key);
-
+            $shopId = 'Xa539bdGVn6nk4CRLpBclC3sZuyJcd';
+            $shopKey = 'qe0WpUMr0hf1oodHdgyfM4CSsnYFYv';
+            $signature = hash_hmac('sha256', "{$nonce}|{$shopId}|{$shopKey}", $shopKey);
+            // Set headers
             $requestHeader = [
                 "C-Request-Nonce: {$nonce}",
                 "C-Request-Signature: {$signature}",
-                "C-Shop-Id: {$this->shop_id}",
+                "C-Shop-Id: {$shopId}",
                 "Content-Type: application/json"
             ];
 
