@@ -136,10 +136,17 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             ));
 
             if (!is_wp_error($response) && $response['response']['code'] === 200) {
-                return json_decode($response['body'], true);
+                $data = json_decode($response['body'], true);
+                if ($data['result'] === 'success') {
+                    return $data;
+                } else {
+                    // Asumsikan ada field 'message' dalam respons jika terjadi error
+                    return array('result' => 'failure', 'message' => $data['message'] ?? 'Terjadi kesalahan saat memproses pembayaran.');
+                }
+            } else {
+                $error_message = is_wp_error($response) ? $response->get_error_message() : "Terjadi kesalahan saat menghubungi gateway pembayaran.";
+                return array('result' => 'failure', 'message' => $error_message);
             }
-
-            return array('result' => 'failure');
         }
     }
 
