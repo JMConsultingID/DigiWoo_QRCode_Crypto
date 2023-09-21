@@ -141,7 +141,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     return $data;
                 } else {
                     // Asumsikan ada field 'message' dalam respons jika terjadi error
-                    return array('result' => 'failure', 'message' => $data['message'] ?? 'Terjadi kesalahan saat memproses pembayaran.');
+                    return array('result' => 'failure', 'message' => $data['error_message'] ?? 'Terjadi kesalahan saat memproses pembayaran.');
                 }
             } else {
                 $error_message = is_wp_error($response) ? $response->get_error_message() : "Terjadi kesalahan saat menghubungi gateway pembayaran.";
