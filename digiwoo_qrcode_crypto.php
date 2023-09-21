@@ -103,53 +103,59 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
         }
 
         private function get_payment_data($order) {
-            $requestUrl = 'https://pay.letknow.com/api/2/get_deposit_address';
             $nonce = str_replace('.', '', microtime(true));
-            $shopId = 'Xa539bdGVn6nk4CRLpBclC3sZuyJcd';
-            $shopKey = 'qe0WpUMr0hf1oodHdgyfM4CSsnYFYv';
-            $signature = hash_hmac('sha256', "{$nonce}|{$shopId}|{$shopKey}", $shopKey);
-            // Set headers
+            $signature = hash_hmac('sha256', "{$nonce}|{$this->shop_id}|{$this->shop_key}", $this->shop_key);
+
             $requestHeader = [
                 "C-Request-Nonce: {$nonce}",
                 "C-Request-Signature: {$signature}",
-                "C-Shop-Id: {$shopId}",
+                "C-Shop-Id: {$this->shop_id}",
                 "Content-Type: application/json"
             ];
 
             $request = [
-                'currency' => 'BTC',
+                'currency'         => 'BTC',
                 'currency_receive' => 'BTC',
-                'reference_id' => 'refid_0001',
-                'client' => [
-                    'id' => 'client_123456',
-                    'first_name' => 'Phil',
-                    'last_name' => 'MacNeely',
-                    'email' => 'hmacneely1@stumbleupon.com',
-                    'address' => '276 Homewood Crossing',
+                'reference_id'     => 'refid_' . $order->get_id(),
+                'client'           => [
+                    'id'        => 'client_' . $order->get_billing_email(),
+                    'first_name'=> $order->get_billing_first_name(),
+                    'last_name' => $order->get_billing_last_name(),
+                    'email'     => $order->get_billing_email(),
+                    'address'   => $order->get_billing_address_1(),
                 ],
             ];
 
-            $response = wp_remote_post('https://pay.letknow.com/api/2/get_deposit_address', array(
-                'method'      => 'POST',
-                'headers'     => $requestHeader,
-                'body'        => json_encode($request),
-                'timeout'     => 60,
-                'sslverify'   => false,
-            ));
+            $requestJson = json_encode($request);
+            $requestUrl = 'https://pay.letknow.com/api/2/get_deposit_address';
+            $ch = curl_init($requestUrl);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 60);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_setopt($ch, CURLOPT_HEADER, 1);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $requestJson);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $requestHeader);
+            $response = curl_exec($ch);
 
-            if (!is_wp_error($response) && $response['response']['code'] === 200) {
-                $data = json_decode($response['body'], true);
-                if ($data['result'] === 'success') {
-                    return $data;
-                } else {
-                    // Asumsikan ada field 'message' dalam respons jika terjadi error
-                    return array('result' => 'failure', 'message' => $data['error_message'] ?? 'Terjadi kesalahan saat memproses pembayaran.');
-                }
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+            $header = substr($response, 0, $headerSize);
+            $response = substr($response, $headerSize);
+            $error = curl_error($ch);
+            $errorCode = curl_errno($ch);
+            curl_close($ch);
+
+            if ($httpCode === 200 && !$error) {
+                return json_decode($response, true);
             } else {
-                $error_message = is_wp_error($response) ? $response->get_error_message() : "Terjadi kesalahan saat menghubungi gateway pembayaran.";
-                return array('result' => 'failure', 'message' => $error_message);
+                // You can log the error here for debugging
+                return array('result' => 'failure');
             }
         }
+
     }
 
     add_action('woocommerce_thankyou', 'show_qr_code_on_thankyou', 10, 1);
