@@ -82,8 +82,8 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             $payment_data = $this->get_payment_data($order);
 
             if ($payment_data['result'] === 'success') {
-                // Set order note with the QR Code info
-                $order->add_order_note("QR Code: " . $payment_data['qr_code']);
+                // Save the QR Code data to order meta
+                update_post_meta($order_id, '_qr_code_data', $payment_data['qr_code']);
 
                 // Reduce stock levels
                 wc_reduce_stock_levels($order_id);
@@ -91,13 +91,13 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 // Remove cart
                 $woocommerce->cart->empty_cart();
 
-                // Return thankyou redirect
+                // Return thankyou redirect with a flag
                 return array(
                     'result'   => 'success',
-                    'redirect' => $this->get_return_url($order)
+                    'redirect' => add_query_arg('show_qr_code', 'true', $this->get_return_url($order))
                 );
             } else {
-                wc_add_notice('Payment error:', 'error');
+                wc_add_notice('Payment error: ' . (isset($payment_data['message']) ? $payment_data['message'] : ''), 'error');
                 return;
             }
         }
@@ -140,6 +140,18 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             }
 
             return array('result' => 'failure');
+        }
+    }
+
+    add_action('woocommerce_thankyou', 'show_qr_code_on_thankyou', 10, 1);
+    function show_qr_code_on_thankyou($order_id) {
+        if (isset($_GET['show_qr_code']) && $_GET['show_qr_code'] === 'true') {
+            $qr_code_data = get_post_meta($order_id, '_qr_code_data', true);
+            if ($qr_code_data) {
+                echo '<div id="qr_code"></div>';
+                echo '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>';
+                echo '<script>new QRCode(document.getElementById("qr_code"), "' . esc_js($qr_code_data) . '");</script>';
+            }
         }
     }
 
