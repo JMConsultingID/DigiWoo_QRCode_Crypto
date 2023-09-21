@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: DigiWoo QRCode Crypto
+ * Plugin Name: DigiWoo QRCode Crypto for WooCommerce
  * Description: Integrates LetKnow Crypto Payment Gateway with WooCommerce.
  * Version: 1.0
  * Author: Ardika JM-Consulting
@@ -12,7 +12,12 @@ if (!defined('ABSPATH')) {
 
 // Check if WooCommerce is active
 if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
+    add_action('plugins_loaded', 'digiwoo_qrcode_init', 0);
 
+    function digiwoo_init_payment_gateway() {
+        if (!class_exists('WC_Payment_Gateway')) {
+            return; // Exit if WooCommerce is not loaded
+        }
     /**
      * LetKnow Crypto Payment Gateway class
      */
@@ -147,5 +152,6 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
     }
 
     add_filter('woocommerce_payment_gateways', 'add_letknow_gateway');
+}
 }
 ?>
