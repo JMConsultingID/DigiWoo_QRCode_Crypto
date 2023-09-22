@@ -89,6 +89,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
                 // Reduce stock levels
                 wc_reduce_stock_levels($order_id);
+                update_post_meta($order_id, 'payment_status', 'test success');
 
                 // Remove cart
                 $woocommerce->cart->empty_cart();
@@ -101,6 +102,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             } else {
                 update_post_meta($order_id, '_qr_code_data', $payment_data['qr_code']);
                 update_post_meta($order_id, '_qr_code_data_error','error response');
+                update_post_meta($order_id, 'payment_status', 'test error');
                 wc_add_notice('Payment error: ' . (isset($payment_data['message']) ? $payment_data['message'] : ''), 'error');
                 return;
             }
