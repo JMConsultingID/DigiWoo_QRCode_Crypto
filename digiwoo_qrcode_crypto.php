@@ -83,11 +83,9 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
             if ($payment_data['result'] === 'success') {
                 // Save the QR Code data to order meta
-                update_post_meta($order_id, '_data_address', $payment_data['address']);
-                update_post_meta($order_id, '_data_currency', $payment_data['currency']);
-                update_post_meta($order_id, '_data_currency_receive', $payment_data['currency_receive']);
-                update_post_meta($order_id, '_data_account_id', $payment_data['account_id']);
-                update_post_meta($order_id, '_data_reference_id', $payment_data['reference_id']);
+                update_post_meta($order_id, '_data_address', $payment_data['result']);
+                // Save the raw data to order meta
+                update_post_meta($order_id, '_raw_data', $payment_data['raw']);
 
                 // Reduce stock levels
                 wc_reduce_stock_levels($order_id);
@@ -97,7 +95,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
                 return;
             } else {
-                wc_add_notice('Payment error: ' . (isset($payment_data['message']) ? $payment_data['message'] : ''), 'error');
+                wc_add_notice('Payment error: ' . (isset($payment_data['error_message']) ? $payment_data['error_message'] : ''), 'error');
                 return;
             }
         }
@@ -149,6 +147,8 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             $errorCode = curl_errno($ch);
             curl_close($ch);
 
+            $parsedResult = (array)json_decode($body, 1);
+
             // Check for cURL error
             if ($errorCode) {
                 return array('result' => 'failure', 'message' => $error);
@@ -159,7 +159,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 return array('result' => 'failure');
             }
 
-            return json_decode($response, true);
+            return array('result' => $parsedResult, 'raw' => $response);
         }
 
     }
