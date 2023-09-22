@@ -142,12 +142,17 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             // Http response
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
+            $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+
+            $header = substr($response, 0, $headerSize);
+            $body = substr($response, $headerSize);
+
             // Curl debug
             $error = curl_error($ch);
             $errorCode = curl_errno($ch);
             curl_close($ch);
 
-            $parsedResult = (array)json_decode($body, 1);
+            $parsedResult = (array)json_decode($body, true); // fixed the reference here
 
             // Check for cURL error
             if ($errorCode) {
