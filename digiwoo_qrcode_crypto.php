@@ -182,7 +182,7 @@ function digiwoo_init_qrcode_crypto_gateway() {
 
                                     Swal.fire({
                                         title: 'Crypto QR Code',
-                                        html: '<img src="data:image/png;base64,${qrCodeBase64}" alt="QR Code" />'
+                                        html: '<img src="data:image/png;base64,${qrCodeBase64}" alt="QR Code" />',
                                         showCloseButton: true,
                                         allowOutsideClick: false,
                                         confirmButtonText: 'Proceed to Payment ',
