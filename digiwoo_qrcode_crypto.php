@@ -100,7 +100,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 );
             } else {
                 wc_add_notice('Payment error: ' . (isset($payment_data['result']['message']) ? $payment_data['result']['message'] : ''), 'error');
-                update_post_meta($order_id, '_error_raw_data', $payment_data['result']['message']);
+                update_post_meta($order_id, '_error_raw_data', $payment_data['result']);
                 return;
             }
         }
