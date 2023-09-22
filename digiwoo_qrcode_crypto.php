@@ -24,18 +24,19 @@ function digiwoo_init_qrcode_crypto_gateway() {
         
         public function __construct() {
             $this->id                 = 'digiwoo_qrcode_crypto';
+            $this->icon = '';  // Path to the icon for this payment gateway
+            $this->has_fields = false;
             $this->method_title       = __('DigiWoo QRCode Crypto', 'digiwoo-qrcode-crypto');
             $this->method_description = __('Accepts cryptocurrency payments.', 'digiwoo-qrcode-crypto');
-            $this->has_fields         = false;
             
             // Load the form fields.
             $this->init_form_fields();
-            
-            // Load the settings.
             $this->init_settings();
             
-            $this->enabled = $this->get_option('enabled');
-            
+            $this->title = $this->get_option('title');
+            $this->shop_id = $this->get_option('shop_id');
+            $this->shop_key = $this->get_option('shop_key');
+
             // Save settings.
             add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
         }
@@ -49,11 +50,21 @@ function digiwoo_init_qrcode_crypto_gateway() {
                     'default' => 'no'
                 ),
                 'title' => array(
-                        'title'       => __('Title', 'digiwoo-qrcode-crypto'),
-                        'type'        => 'text',
-                        'description' => __('This controls the title the user sees during checkout.', 'digiwoo-qrcode-crypto'),
-                        'default'     => __('PIX QRCode', 'digiwoo-qrcode-crypto'),
-                        'desc_tip'    => true,
+                    'title'       => __('Title', 'digiwoo-qrcode-crypto'),
+                    'type'        => 'text',
+                    'description' => __('This controls the title the user sees during checkout.', 'digiwoo-qrcode-crypto'),
+                    'default'     => __('PIX QRCode', 'digiwoo-qrcode-crypto'),
+                    'desc_tip'    => true,
+                ),
+                'shop_id' => array(
+                    'title' => 'Shop ID',
+                    'type' => 'text',
+                    'desc_tip' => 'This is the Shop ID provided by LetKnow.',
+                ),
+                'shop_key' => array(
+                    'title' => 'Shop Key',
+                    'type' => 'text',
+                    'desc_tip' => 'This is the Shop Key provided by LetKnow.',
                 ),
             );
         }
