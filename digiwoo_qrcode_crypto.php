@@ -106,6 +106,7 @@ function digiwoo_init_qrcode_crypto_gateway() {
             $request = [
                 'currency' => 'BTC',
                 'currency_receive' => 'BTC',
+                'receive_amount'=>'40.99',
                 'reference_id' => 'refid_' . $order->get_id(),
                 'client' => [
                     'id' => 'client_' . $order->get_user_id(),
