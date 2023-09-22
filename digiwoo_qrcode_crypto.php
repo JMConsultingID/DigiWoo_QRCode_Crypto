@@ -82,9 +82,10 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             $payment_data = $this->get_payment_data($order);
 
             if ($payment_data['result'] === 'success') {
-                // Save the QR Code data to order meta
-                update_post_meta($order_id, '_qr_code_data', $payment_data['qr_code']);
-                update_post_meta($order_id, '_qr_code_data_success','success response');
+
+               // Set the order status to 'on-hold' and reduce stock levels (if applicable)
+                $order->update_status('on-hold', __('Awaiting PIX QRCode Crypto.', 'woocommerce'));
+                $order->add_order_note(__('PIX QRCode Crypto.', 'woocommerce'));
 
                 // Reduce stock levels
                 wc_reduce_stock_levels($order_id);
