@@ -34,6 +34,7 @@ function digiwoo_init_qrcode_crypto_gateway() {
             $this->init_settings();
             
             $this->title = $this->get_option('title');
+            $this->endpoint_url = $this->get_option('endpoint_url');
             $this->shop_id = $this->get_option('shop_id');
             $this->shop_key = $this->get_option('shop_key');
 
@@ -55,6 +56,11 @@ function digiwoo_init_qrcode_crypto_gateway() {
                     'description' => __('This controls the title the user sees during checkout.', 'digiwoo-qrcode-crypto'),
                     'default'     => __('PIX QRCode', 'digiwoo-qrcode-crypto'),
                     'desc_tip'    => true,
+                ),
+                'endpoint_url' => array(
+                    'title' => 'Endpoint Url',
+                    'type' => 'text',
+                    'desc_tip' => 'This is the Endpoint Url provided by LetKnow.',
                 ),
                 'shop_id' => array(
                     'title' => 'Shop ID',
@@ -101,10 +107,10 @@ function digiwoo_init_qrcode_crypto_gateway() {
         }
 
         public function generate_qrcode($order) {
-            $requestUrl = 'https://pay.letknow.com/api/2/get_deposit_address';
+            $requestUrl = $this->endpoint_url;
             $nonce = str_replace('.', '', microtime(true));
-            $shopId = 'Xa539bdGVn6nk4CRLpBclC3sZuyJcd';
-            $shopKey = 'qe0WpUMr0hf1oodHdgyfM4CSsnYFYv';
+            $shopId = $this->shop_id;
+            $shopKey = $this->shop_key;
             $signature = hash_hmac('sha256', "{$nonce}|{$shopId}|{$shopKey}", $shopKey);
 
             $requestHeader = [
