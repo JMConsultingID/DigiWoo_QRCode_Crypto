@@ -135,7 +135,7 @@ function digiwoo_init_qrcode_crypto_gateway() {
         return $methods;
     }
 
-    function digiwoo_enqueue_scripts() {
+    function digiwoo_crypto_enqueue_scripts() {
     // Only enqueue on the checkout page
         if (is_checkout()) {
             wp_enqueue_script('sweetalert2', 'https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js');
@@ -143,7 +143,7 @@ function digiwoo_init_qrcode_crypto_gateway() {
             wp_enqueue_script('qrcode', 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js');
         }
     }
-    add_action('wp_enqueue_scripts', 'digiwoo_enqueue_scripts');
+    add_action('wp_enqueue_scripts', 'digiwoo_crypto_enqueue_scripts');
 
     function digiwoo_localize_checkout_scripts() {
         if (is_checkout()) {
