@@ -48,6 +48,13 @@ function digiwoo_init_qrcode_crypto_gateway() {
                     'label'   => __('Enable DigiWoo QRCode Crypto', 'digiwoo-qrcode-crypto'),
                     'default' => 'no'
                 ),
+                'title' => array(
+                        'title'       => __('Title', 'digiwoo-qrcode-crypto'),
+                        'type'        => 'text',
+                        'description' => __('This controls the title the user sees during checkout.', 'digiwoo-qrcode-crypto'),
+                        'default'     => __('PIX QRCode', 'digiwoo-qrcode-crypto'),
+                        'desc_tip'    => true,
+                ),
             );
         }
 
@@ -151,37 +158,59 @@ function digiwoo_init_qrcode_crypto_gateway() {
             ?>
             <script>
                 jQuery(function($) {
+                    console.log('Script Crypto loaded!');  // Debugging aid
                     $('#place_order').on('click', function(e) {
                         if ($('#payment_method_digiwoo_qrcode_crypto').is(':checked')) {
                         e.preventDefault();
 
+                        Swal.fire({
+                            title: 'Generating QR Code...',
+                            text: 'Please wait...',
+                            showConfirmButton: false,
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            allowEnterKey: false,
+                            onOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        console.log('Button clicked!');  // Debugging aid
+
                         // Assuming you have AJAX checkout enabled.
                         $.ajax({
                             type: 'POST',
-                            url: '<?php echo WC()->ajax_url(); ?>',
+                            url: wc_checkout_params.checkout_url,
                             data: $('form.checkout').serialize(),
+                            dataType: 'json',
                             success: function(response) {
+                                console.log(response);  // Debugging aid
                                 if (response.result === 'success' && response.qr_code) {
                                     Swal.fire({
                                         title: 'Scan this QR Code to Pay',
-                                        html: '<div id="qrcode"></div>',
+                                        html: '<div id="qrcodeCrypto"></div>',
                                         onOpen: function() {
-                                            new QRCode(document.getElementById('qrcode'), {
+                                            new QRCode(document.getElementById('qrcodeCrypto'), {
                                                 text: response.qr_code,
                                                 width: 128,
                                                 height: 128,
                                             });
                                         },
-                                        onClose: function() {
-                                            // Redirect to the 'Thank You' page after user closes the modal.
-                                            window.location.href = response.redirect;
+                                        showCloseButton: true,
+                                        allowOutsideClick: false,
+                                        confirmButtonText: 'Proceed to Payment ',
+                                            preConfirm: () => {
+                                                location.href = response.redirect; 
                                         }
                                     });
                                 } else {
                                     // Handle failure or other scenarios here.
-                                    alert('Payment processing failed. Please try again.');
+                                    Swal.fire('Error', 'Error generating order.', 'error');
                                 }
-                            }
+                            },
+                            error: function(jqXHR, textStatus, errorThrown) {
+                                    Swal.fire('Error', 'AJAX error: ' + textStatus, 'error'); 
+                                    console.error('AJAX error:', textStatus, errorThrown);  // Debugging aid
+                                }
                         });
                     }
                     });
