@@ -145,18 +145,53 @@ function digiwoo_init_qrcode_crypto_gateway() {
     }
     add_action('wp_enqueue_scripts', 'digiwoo_crypto_enqueue_scripts');
 
-    function digiwoo_localize_checkout_scripts() {
+    function digiwooo_crypto_inline_js() {
+        // Only add the script on the checkout page
         if (is_checkout()) {
-            wp_enqueue_script('digiwoo-checkout-handler', plugin_dir_url(__FILE__) . 'assets/js/checkout-handler.js', array('jquery', 'qrcodejs', 'sweetalert2'), '1.0.0', true);
-            
-            $digiwoo_data = array(
-                'checkout_url' => WC()->ajax_url(),
-            );
-            
-            wp_localize_script('digiwoo-checkout-handler', 'digiwoo_params', $digiwoo_data);
+            ?>
+            <script>
+                jQuery(function($) {
+                    $('#place_order').on('click', function(e) {
+                        if ($('#payment_method_digiwoo_qrcode_crypto').is(':checked')) {
+                        e.preventDefault();
+
+                        // Assuming you have AJAX checkout enabled.
+                        $.ajax({
+                            type: 'POST',
+                            url: '<?php echo WC()->ajax_url(); ?>',
+                            data: $('form.checkout').serialize(),
+                            success: function(response) {
+                                if (response.result === 'success' && response.qr_code) {
+                                    Swal.fire({
+                                        title: 'Scan this QR Code to Pay',
+                                        html: '<div id="qrcode"></div>',
+                                        onOpen: function() {
+                                            new QRCode(document.getElementById('qrcode'), {
+                                                text: response.qr_code,
+                                                width: 128,
+                                                height: 128,
+                                            });
+                                        },
+                                        onClose: function() {
+                                            // Redirect to the 'Thank You' page after user closes the modal.
+                                            window.location.href = response.redirect;
+                                        }
+                                    });
+                                } else {
+                                    // Handle failure or other scenarios here.
+                                    alert('Payment processing failed. Please try again.');
+                                }
+                            }
+                        });
+                    }
+                    });
+                });
+            </script>
+            <?php
         }
     }
-    add_action('wp_enqueue_scripts', 'digiwoo_localize_checkout_scripts');
+    add_action('wp_footer', 'digiwooo_crypto_inline_js');
+
 
 
 }
