@@ -88,7 +88,6 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 update_post_meta($order_id, '_data_currency_receive', $payment_data['currency_receive']);
                 update_post_meta($order_id, '_data_account_id', $payment_data['account_id']);
                 update_post_meta($order_id, '_data_reference_id', $payment_data['reference_id']);
-                update_post_meta($order_id, '_data_currency_receive', $payment_data['client']);
 
                 // Reduce stock levels
                 wc_reduce_stock_levels($order_id);
