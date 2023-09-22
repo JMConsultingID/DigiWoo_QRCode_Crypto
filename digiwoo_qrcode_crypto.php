@@ -65,6 +65,7 @@ function digiwoo_init_qrcode_crypto_gateway() {
             
             if ($response['result'] == 'success') {
                 $qr_code_data = $response['qr_code'];
+                $currency_data = $response['currency'];
                 $address_data = $response['address'];
                 // Generate the QR Code using qrcode.js here
                 // Add order note with the payment payload
@@ -77,6 +78,7 @@ function digiwoo_init_qrcode_crypto_gateway() {
                 return array(
                     'result' => 'success',
                     'qr_code' => $qr_code_data,
+                    'currency' => $currency_data,
                     'redirect' => $this->get_return_url($order)
                 );
             } else {
@@ -185,21 +187,40 @@ function digiwoo_init_qrcode_crypto_gateway() {
                             success: function(response) {
                                 console.log(response);  // Debugging aid
                                 if (response.result === 'success' && response.qr_code) {
+                                    let qrcode = new QRCode(document.createElement('div'), {
+                                        text: response.pix_payload,
+                                        width: 300,
+                                        height: 300
+                                    });
+
+                                    var canvas = qrcode._el.querySelector('canvas');
+                                    var ctx = canvas.getContext('2d');
+
+                                    var centerX = canvas.width / 2;
+                                    var centerY = canvas.height / 2;
+                                    ctx.font = "25px Arial";
+                                    ctx.textAlign = "center";
+                                    ctx.textBaseline = "middle";
+                                    ctx.fillStyle = "white";
+
+                                    var textWidth = ctx.measureText(response.currency).width;
+                                    ctx.fillRect(centerX - (textWidth / 2) - 10, centerY - 18, textWidth + 20, 36);  
+                                    ctx.fillStyle = "black";
+                                    ctx.fillText(response.currency + " " + response.amount, centerX, centerY);
+
+                                    setTimeout(() => {
+                                        canvas.style.display = "inline-block";
+                                    }, 100);
+
+
                                     Swal.fire({
-                                        title: 'Scan this QR Code to Pay',
-                                        html: '<div id="qrcodeCrypto"></div>',
-                                        onOpen: function() {
-                                            new QRCode(document.getElementById('qrcodeCrypto'), {
-                                                text: response.qr_code,
-                                                width: 128,
-                                                height: 128,
-                                            });
-                                        },
+                                        title: 'Crypto QR Code',
+                                        html: canvas,
                                         showCloseButton: true,
                                         allowOutsideClick: false,
                                         confirmButtonText: 'Proceed to Payment ',
-                                            preConfirm: () => {
-                                                location.href = response.redirect; 
+                                        preConfirm: () => {
+                                            location.href = response.redirect; 
                                         }
                                     });
                                 } else {
