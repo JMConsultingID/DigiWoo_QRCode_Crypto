@@ -177,35 +177,11 @@ function digiwoo_init_qrcode_crypto_gateway() {
                             success: function(response) {
                                 console.log(response);  // Debugging aid
                                 if (response.result === 'success' && response.qr_code) {
-                                    let qrcode = new QRCode(document.createElement('div'), {
-                                        text: response.pix_payload,
-                                        width: 300,
-                                        height: 300
-                                    });
-
-                                    var canvas = qrcode._el.querySelector('canvas');
-                                    var ctx = canvas.getContext('2d');
-
-                                    var centerX = canvas.width / 2;
-                                    var centerY = canvas.height / 2;
-                                    ctx.font = "25px Arial";
-                                    ctx.textAlign = "center";
-                                    ctx.textBaseline = "middle";
-                                    ctx.fillStyle = "white";
-
-                                    var textWidth = ctx.measureText(response.currency).width;
-                                    ctx.fillRect(centerX - (textWidth / 2) - 10, centerY - 18, textWidth + 20, 36);  
-                                    ctx.fillStyle = "black";
-                                    ctx.fillText(response.currency + " " + response.amount, centerX, centerY);
-
-                                    setTimeout(() => {
-                                        canvas.style.display = "inline-block";
-                                    }, 100);
-
+                                    const qrCodeBase64 = response.qr_code;
 
                                     Swal.fire({
                                         title: 'Crypto QR Code',
-                                        html: canvas,
+                                        html: '<img src="data:image/png;base64,${qrCodeBase64}" alt="QR Code" />'
                                         showCloseButton: true,
                                         allowOutsideClick: false,
                                         confirmButtonText: 'Proceed to Payment ',
