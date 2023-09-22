@@ -68,7 +68,8 @@ function digiwoo_init_qrcode_crypto_gateway() {
                 
                 // Return thankyou redirect
                 return array(
-                    'result'   => 'success',
+                    'result' => 'success',
+                    'qr_code' => $qr_code_data,
                     'redirect' => $this->get_return_url($order)
                 );
             } else {
@@ -133,5 +134,30 @@ function digiwoo_init_qrcode_crypto_gateway() {
         $methods[] = 'WC_Gateway_DigiWoo_QRCode_Crypto';
         return $methods;
     }
+
+    function digiwoo_enqueue_scripts() {
+    // Only enqueue on the checkout page
+        if (is_checkout()) {
+            wp_enqueue_script('sweetalert2', 'https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.js');
+            wp_enqueue_style('sweetalert2', 'https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css');
+            wp_enqueue_script('qrcode', 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js');
+        }
+    }
+    add_action('wp_enqueue_scripts', 'digiwoo_enqueue_scripts');
+
+    function digiwoo_localize_checkout_scripts() {
+        if (is_checkout()) {
+            wp_enqueue_script('digiwoo-checkout-handler', plugin_dir_url(__FILE__) . 'assets/js/checkout-handler.js', array('jquery', 'qrcodejs', 'sweetalert2'), '1.0.0', true);
+            
+            $digiwoo_data = array(
+                'checkout_url' => WC()->ajax_url(),
+            );
+            
+            wp_localize_script('digiwoo-checkout-handler', 'digiwoo_params', $digiwoo_data);
+        }
+    }
+    add_action('wp_enqueue_scripts', 'digiwoo_localize_checkout_scripts');
+
+
 }
 
