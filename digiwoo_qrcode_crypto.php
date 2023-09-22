@@ -93,9 +93,14 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 // Remove cart
                 $woocommerce->cart->empty_cart();
 
-                return;
+                // Return thankyou redirect with a flag
+                return array(
+                    'result'   => 'success',
+                    'redirect' => add_query_arg('show_qr_code', 'true', $this->get_return_url($order))
+                );
             } else {
-                wc_add_notice('Payment error: ' . (isset($payment_data['error_message']) ? $payment_data['error_message'] : ''), 'error');
+                wc_add_notice('Payment error: ' . (isset($payment_data['result']['message']) ? $payment_data['result']['message'] : ''), 'error');
+                update_post_meta($order_id, '_error_raw_data', $payment_data['result']['message']);
                 return;
             }
         }
