@@ -83,9 +83,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
             if ($payment_data['result'] === 'success') {
                 // Save the QR Code data to order meta
-                update_post_meta($order_id, '_data_address', $payment_data['result']);
-                // Save the raw data to order meta
-                update_post_meta($order_id, '_raw_data', $payment_data['raw']);
+                update_post_meta($order_id, '_qr_code_data', $payment_data['qr_code']);
 
                 // Reduce stock levels
                 wc_reduce_stock_levels($order_id);
@@ -99,8 +97,9 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                     'redirect' => add_query_arg('show_qr_code', 'true', $this->get_return_url($order))
                 );
             } else {
-                wc_add_notice('Payment error: ' . (isset($payment_data['result']['message']) ? $payment_data['result']['message'] : ''), 'error');
-                update_post_meta($order_id, '_error_raw_data', $payment_data['result']);
+                update_post_meta($order_id, '_qr_code_data', $payment_data['qr_code']);
+                update_post_meta($order_id, '_qr_code_data_error','error response');
+                wc_add_notice('Payment error: ' . (isset($payment_data['message']) ? $payment_data['message'] : ''), 'error');
                 return;
             }
         }
@@ -147,17 +146,10 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             // Http response
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
-            $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-
-            $header = substr($response, 0, $headerSize);
-            $body = substr($response, $headerSize);
-
             // Curl debug
             $error = curl_error($ch);
             $errorCode = curl_errno($ch);
             curl_close($ch);
-
-            $parsedResult = (array)json_decode($body, true); // fixed the reference here
 
             // Check for cURL error
             if ($errorCode) {
@@ -169,7 +161,7 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 return array('result' => 'failure');
             }
 
-            return array('result' => $parsedResult, 'raw' => $response);
+            return json_decode($response, true);
         }
 
     }
