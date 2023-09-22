@@ -101,9 +101,9 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 return;
             }
         }
-
         private function get_payment_data($order) {
             $nonce = str_replace('.', '', microtime(true));
+
             $signature = hash_hmac('sha256', "{$nonce}|{$this->shop_id}|{$this->shop_key}", $this->shop_key);
 
             $requestHeader = [
@@ -128,32 +128,38 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
 
             $requestJson = json_encode($request);
             $requestUrl = 'https://pay.letknow.com/api/2/get_deposit_address';
+
             $ch = curl_init($requestUrl);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 60);
             curl_setopt($ch, CURLOPT_TIMEOUT, 60);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-            curl_setopt($ch, CURLOPT_HEADER, 1);
+            curl_setopt($ch, CURLOPT_HEADER, 0); // We don't want the headers in the response
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $requestJson);
             curl_setopt($ch, CURLOPT_HTTPHEADER, $requestHeader);
             $response = curl_exec($ch);
 
+            // Http response
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-            $header = substr($response, 0, $headerSize);
-            $response = substr($response, $headerSize);
+
+            // Curl debug
             $error = curl_error($ch);
             $errorCode = curl_errno($ch);
             curl_close($ch);
 
-            if ($httpCode === 200 && !$error) {
-                return json_decode($response, true);
-            } else {
-                // You can log the error here for debugging
+            // Check for cURL error
+            if ($errorCode) {
+                return array('result' => 'failure', 'message' => $error);
+            }
+
+            // Check for HTTP code other than 200
+            if ($httpCode !== 200) {
                 return array('result' => 'failure');
             }
+
+            return json_decode($response, true);
         }
 
     }
