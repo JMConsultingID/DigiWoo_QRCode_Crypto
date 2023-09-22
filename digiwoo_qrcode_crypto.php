@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: DigiWoo QRCode Crypto
+ * Plugin Name: DigiWoo QRCode Crypto for WooCommerce
  * Description: Integrates LetKnow Crypto Payment Gateway with WooCommerce.
  * Version: 1.0
  * Author: Ardika JM-Consulting
@@ -12,7 +12,12 @@ if (!defined('ABSPATH')) {
 
 // Check if WooCommerce is active
 if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
+    add_action('plugins_loaded', 'digiwoo_init_payment_gateway', 0);
 
+    function digiwoo_init_payment_gateway() {
+        if (!class_exists('WC_Payment_Gateway')) {
+            return; // Exit if WooCommerce is not loaded
+        }
     /**
      * LetKnow Crypto Payment Gateway class
      */
@@ -77,26 +82,31 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
             $payment_data = $this->get_payment_data($order);
 
             if ($payment_data['result'] === 'success') {
-                // Set order note with the QR Code info
-                $order->add_order_note("QR Code: " . $payment_data['qr_code']);
+
+               // Set the order status to 'on-hold' and reduce stock levels (if applicable)
+                $order->update_status('on-hold', __('Awaiting PIX QRCode Crypto.', 'woocommerce'));
+                $order->add_order_note(__('PIX QRCode Crypto.', 'woocommerce'));
 
                 // Reduce stock levels
                 wc_reduce_stock_levels($order_id);
+                update_post_meta($order_id, 'payment_status', 'test success');
 
                 // Remove cart
                 $woocommerce->cart->empty_cart();
 
-                // Return thankyou redirect
+                // Return thankyou redirect with a flag
                 return array(
                     'result'   => 'success',
-                    'redirect' => $this->get_return_url($order)
+                    'redirect' => add_query_arg('show_qr_code', 'true', $this->get_return_url($order))
                 );
             } else {
-                wc_add_notice('Payment error:', 'error');
+                update_post_meta($order_id, '_qr_code_data', $payment_data['qr_code']);
+                update_post_meta($order_id, '_qr_code_data_error','error response');
+                update_post_meta($order_id, 'payment_status', 'test error');
+                wc_add_notice('Payment error: ' . (isset($payment_data['message']) ? $payment_data['message'] : ''), 'error');
                 return;
             }
         }
-
         private function get_payment_data($order) {
             $nonce = str_replace('.', '', microtime(true));
 
@@ -122,63 +132,54 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
                 ],
             ];
 
-            $response = wp_remote_post('https://pay.letknow.com/api/2/get_deposit_address', array(
-                'method'      => 'POST',
-                'headers'     => $requestHeader,
-                'body'        => json_encode($request),
-                'timeout'     => 60,
-                'sslverify'   => false,
-            ));
+            $requestJson = json_encode($request);
+            $requestUrl = 'https://pay.letknow.com/api/2/get_deposit_address';
 
-            if (!is_wp_error($response) && $response['response']['code'] === 200) {
-                return json_decode($response['body'], true);
+            $ch = curl_init($requestUrl);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 60);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+            curl_setopt($ch, CURLOPT_HEADER, 0); // We don't want the headers in the response
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $requestJson);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $requestHeader);
+            $response = curl_exec($ch);
+
+            // Http response
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+            // Curl debug
+            $error = curl_error($ch);
+            $errorCode = curl_errno($ch);
+            curl_close($ch);
+
+            // Check for cURL error
+            if ($errorCode) {
+                return array('result' => 'failure', 'message' => $error);
             }
 
-            return array('result' => 'failure');
+            // Check for HTTP code other than 200
+            if ($httpCode !== 200) {
+                return array('result' => 'failure');
+            }
+
+            return json_decode($response, true);
         }
 
-        public function enqueue_scripts() {
-            if (!is_checkout()) return;
-            wp_enqueue_script('sweetalert2', 'https://cdn.jsdelivr.net/npm/sweetalert2@10', array(), null, true);
-            wp_add_inline_script('sweetalert2', $this->generate_inline_script(), 'after');
+    }
+
+    add_action('woocommerce_thankyou', 'show_qr_code_on_thankyou', 10, 1);
+    function show_qr_code_on_thankyou($order_id) {
+        if (isset($_GET['show_qr_code']) && $_GET['show_qr_code'] === 'true') {
+            $qr_code_data = get_post_meta($order_id, '_qr_code_data', true);
+            if ($qr_code_data) {
+                echo '<div id="qr_code"></div>';
+                echo '<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>';
+                echo '<script>new QRCode(document.getElementById("qr_code"), "' . esc_js($qr_code_data) . '");</script>';
+            }
         }
-
-        private function generate_inline_script() {
-            return "
-                jQuery(function($) {
-                    $('#place_order').on('click', function(e) {
-                        e.preventDefault();
-
-                        $.ajax({
-                            type: 'POST',
-                            url: wc_checkout_params.checkout_url,
-                            data: $('form.checkout').serialize(),
-                            dataType: 'json',
-                            success: function(response) {
-                                // Jika ada QR Code dalam response
-                                if (response.qr_code) {
-                                    Swal.fire({
-                                        title: 'Please Scan the QR Code',
-                                        html: '<img src=\"data:image/png;base64,' + response.qr_code + '\" />',
-                                        confirmButtonText: 'Continue',
-                                    }).then((result) => {
-                                        if (result.isConfirmed) {
-                                            window.location.href = response.redirect;
-                                        }
-                                    });
-                                } else {
-                                    alert(response.message);  // Menampilkan pesan error
-                                }
-                            }
-                        });
-                    });
-                });
-            ";
-        }
-
-        // Tambahkan hook untuk mendaftarkan script Anda
-        add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
-
     }
 
     /**
@@ -190,5 +191,6 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
     }
 
     add_filter('woocommerce_payment_gateways', 'add_letknow_gateway');
+}
 }
 ?>
