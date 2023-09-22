@@ -112,6 +112,7 @@ function digiwoo_init_qrcode_crypto_gateway() {
             $shopId = $this->shop_id;
             $shopKey = $this->shop_key;
             $signature = hash_hmac('sha256', "{$nonce}|{$shopId}|{$shopKey}", $shopKey);
+            $total_order = $order->get_total();
 
             $requestHeader = [
                 "C-Request-Nonce: {$nonce}",
@@ -123,7 +124,7 @@ function digiwoo_init_qrcode_crypto_gateway() {
             $request = [
                 'currency' => 'BTC',
                 'currency_receive' => 'BTC',
-                'receive_amount'=>'40.99',
+                'receive_amount'=>$total_order,
                 'reference_id' => 'refid_' . $order->get_id(),
                 'client' => [
                     'id' => 'client_' . $order->get_user_id(),
